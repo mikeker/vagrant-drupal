@@ -48,8 +48,9 @@ apache site conf:
     - require:
       - pkg: apache2
 
-enable example:
+enable site:
   cmd.run:
+    # @TODO: Need to generalize this into some sort of imported config file.
     - name: a2ensite example.com
     - unless: test -L /etc/apache2/sites-enabled/example.com
     - require:
@@ -66,7 +67,7 @@ start apache2:
   cmd.run:
     - name: service apache2 restart
     - watch:
-      - cmd: enable example
+      - cmd: enable site
       - cmd: enable rewrite
 
 # apache.configfile:
