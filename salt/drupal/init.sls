@@ -150,6 +150,20 @@ php-apc:
   - require:
     - pkg: php5
 
+# Tweak some php.ini settings
+/etc/php5/apache2/php.ini:
+  file.append:
+    - text: |
+        [PHP]
+        memory_limit = 256M
+        realpath_cache_size = 16M
+        realpath_cache_ttl = 60
+restart apache2:
+  cmd.run:
+    - name: service apache2 restart
+    - watch:
+      - file: /etc/php5/apache2/php.ini
+
 # Version control
 git:
   pkg:
