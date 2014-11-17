@@ -40,8 +40,8 @@ apache2:
 
 apache site conf:
   file.managed:
-    - name: /etc/apache2/sites-available/behavenet.com.conf
-    - source: salt://drupal/files/behavenet.com.conf
+    - name: /etc/apache2/sites-available/example.com.conf
+    - source: salt://drupal/files/example.com.conf
     - user: vagrant
     - group: vagrant
     - mode: 0644
