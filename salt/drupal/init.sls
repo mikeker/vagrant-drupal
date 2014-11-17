@@ -40,8 +40,8 @@ apache2:
 
 apache site conf:
   file.managed:
-    - name: /etc/apache2/sites-available/example.com.conf
-    - source: salt://drupal/files/example.com.conf
+    - name: /etc/apache2/sites-available/bef.d7.conf
+    - source: salt://drupal/files/bef.d7.conf
     - user: vagrant
     - group: vagrant
     - mode: 0644
@@ -51,8 +51,8 @@ apache site conf:
 enable site:
   cmd.run:
     # @TODO: Need to generalize this into some sort of imported config file.
-    - name: a2ensite example.com
-    - unless: test -L /etc/apache2/sites-enabled/example.com
+    - name: a2ensite bef.d7.conf
+    - unless: test -L /etc/apache2/sites-enabled/bef.d7.conf
     - require:
       - file: apache site conf
 
@@ -117,8 +117,13 @@ start apache2:
 #     - pkg: libpcre3-dev
 
 #
-# Latest PHP
+# Latest PHP (5.3 on Precise)
 #
+php5:
+  pkg:
+  - installed
+  - require:
+    - pkg: apache2
 php5-cli:
   pkg:
   - installed
@@ -135,6 +140,11 @@ php5-mysql:
   - require:
     - pkg: php5
 php5-curl:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5
+php-apc:
   pkg:
   - installed
   - require:
