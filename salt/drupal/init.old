@@ -1,0 +1,415 @@
+{% set HOME='/home/vagrant' %}
+git:
+  pkg:
+    - installed
+
+# /cozi/virtual/cozi-website7/source/default:
+#   file.directory:
+#   - user: vagrant
+#   - group: vagrant
+#   - require:
+#     - git: git_website_content
+
+# /cozi/virtual/cozi-website7/source/default/files:
+#   file.symlink:
+#     - target: /cozi/virtual/cozi-content/files
+#     - user: vagrant
+#     - group: vagrant
+#     - require:
+#       - file: /cozi/virtual/cozi-website7/source/default
+
+# Apache configuration
+/var/lock/apache2:
+  file.directory:
+  - user: vagrant
+  - group: vagrant
+
+# Update the user
+/etc/apache2/envvars:
+  file.append:
+  - text: |
+      # COZI OVERRIDES FOR VAGRANT INSTANCE
+      # Allows all of the access to run as the vagrant/native user
+      export APACHE_RUN_USER=vagrant
+      export APACHE_RUN_GROUP=vagrant
+  - require:
+    - pkg: apache2
+
+# {{ HOME }}:
+#   file.directory:
+#   - user: vagrant
+#   - group: vagrant
+#   - mode: 2755
+
+# {{ HOME }}/.ssh:
+#   file.directory:
+#   - user: vagrant
+#   - group: vagrant
+#   - mode: 2700
+#   - require:
+#     - file: {{ HOME }}
+
+# {{ HOME }}/.ssh/config:
+#   file.managed:
+#   - user: vagrant
+#   - group: vagrant
+#   - source: salt://drupal8-core/files/ssh_config
+#   - mode: 2400
+#   - require:
+#     - file: {{ HOME }}/.ssh
+
+common_aliases:
+  file.managed:
+  - name: {{ HOME }}/.bash_aliases
+  - user: vagrant
+  - source: salt://drupal8-core/files/bash_aliases
+  - node: 2444
+
+# github_private_key:
+#   file.managed:
+#   - names:
+#     - {{ HOME }}/.ssh/github_rsa
+#   - source: salt://drupal8-core/files/github_rsa
+#   - user: vagrant
+#   - group: vagrant
+#   - mode: 2400
+#   - require:
+#     - file: {{ HOME }}/.ssh
+
+# github_public_key:
+#   file.managed:
+#   - names:
+#     - {{ HOME }}/.ssh/github_rsa.pub
+#   - source: salt://drupal8-core/files/github_rsa.pub
+#   - user: vagrant
+#   - group: vagrant
+#   - mode: 2444
+#   - require:
+#     - file: {{ HOME }}/.ssh
+
+# github_ssh_hosts_key:
+#   ssh_known_hosts:
+#   - present
+#   - names:
+#     - github.com
+#   - user: vagrant
+#   - fingerprint: 16:27:ac:a5:76:28:2d:36:63:1b:56:4d:eb:df:a6:48
+
+# git_website_content:
+#   git.latest:
+#   - identity: /home/vagrant/.ssh/github_rsa
+#   - target: /cozi/content
+#   - names:
+#     - git@github.com:cozi/website-content.git
+#   - require:
+#     - file: /cozi
+#     - file: github_public_key
+#     - file: github_private_key
+#     - ssh_known_hosts: github_ssh_hosts_key
+#     - user: vagrant
+
+# /cozi/virtual:
+#   file.directory:
+#   - user: vagrant
+#   - group: vagrant
+#   - mode: 2775
+#   - require:
+#     - file: /cozi
+
+# Mounted by virtualbox, so we cannot change the file mode on this directory
+/var/www/d8:
+  file.directory:
+  - user: vagrant
+  - group: vagrant
+  # - require:
+  #   - file: /var/www
+
+make:
+  pkg.installed
+
+# redis-server:
+#   pkg:
+#   - installed
+
+#   service:
+#   - running
+#   - require:
+#     - pkg: redis-server
+#   - enable: True
+
+apache2:
+  pkg:
+  - installed
+
+  service:
+  - running
+  - require:
+    - pkg: apache2
+    - file: /var/lock/apache2
+    - file: /etc/apache2/envvars
+  - watch:
+    - file: /etc/apache2/envvars
+  - enable: True
+
+libcurl4-openssl-dev:
+  pkg:
+  - installed
+
+zlib1g:
+  pkg:
+  - installed
+
+zlib1g-dev:
+  pkg:
+  - installed
+
+libcurl3:
+  pkg:
+  - installed
+
+libevent-dev:
+  pkg:
+  - installed
+
+libpcre3-dev:
+  pkg:
+  - installed
+
+# php5:
+#   pkg:
+#   - installed
+#   - require:
+#     - pkg: apache2
+
+# From http://stackoverflow.com/questions/19212157/salt-stack-vagrant-php-5-5-on-ubuntu-12-04
+php5_ppa:
+  pkgrepo.managed:
+    - ppa: ondrej/php5-oldstable
+
+php5-fpm:
+  pkg.latest:
+    - refresh: True
+    - require:
+      - pkgrepo: php5_ppa
+  service.running:
+    - enable: True
+    # - watch:
+    #   - file: /etc/php5/fpm/pool.d/www.conf
+    - require:
+      - pkg: php5-fpm
+      - pkg: php5-mcrypt
+      - pkg: php5-curl
+      - pkg: php5-mysql
+      - pkg: php5-cli
+  # file.managed:
+  #   - name: /etc/php5/fpm/pool.d/www.conf
+  #   - source: salt://packages/php/www.conf
+  #   - user: root
+  #   - group: root
+  #   - mode: '0640'
+  #   - require:
+  #     - pkg: php5-fpm
+
+# php5:
+#   pkg.latest:
+#     - refresh: True
+#     - require:
+#       - pkgrepo: php5_ppa
+#   service.running:
+#     - enable: True
+#     # - watch:
+#     #   - file: /etc/php5/fpm/pool.d/www.conf
+#     - require:
+#       # - pkg: php5-fpm
+#       - pkg: php5-mcrypt
+#       - pkg: php5-curl
+#       - pkg: php5-mysql
+#       - pkg: php5-cli
+#       - pkg: php5-gd
+  # file.managed:
+  #   - name: /etc/php5/fpm/pool.d/www.conf
+  #   - source: salt://packages/php/www.conf
+  #   - user: root
+  #   - group: root
+  #   - mode: '0640'
+  #   - require:
+  #     - pkg: php5-fpm
+
+php-http:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+php-http-request:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+    - pkg: libcurl3
+    - pkg: libpcre3-dev
+
+php5-gd:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+php5-mysql:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+php5-mcrypt:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+php5-cli:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+php5-curl:
+  pkg:
+  - installed
+  - require:
+    - pkg: php5-fpm
+
+mysql-client:
+  pkg:
+  - installed
+
+mysql-server:
+  pkg:
+  - installed
+  service:
+  - running
+  - require:
+    - pkg: mysql-server
+  - enable: True
+
+# python-mysqldb:
+#   pkg:
+#   - installed
+#   - require:
+#     - pkg: mysql-server
+
+# cozi_website_database:
+#   mysql_database.present:
+#    - names:
+#      - coziwebsite
+#    - mysql.host: localhost
+#    - mysql.user: root
+#    - require:
+#      - pkg: mysql-server
+#      - pkg: python-mysqldb
+
+drupal_mysql_user:
+  mysql_user.present:
+   - mysql.host: localhost
+   - mysql.user: root
+   - name: drupal
+   - host: localhost
+   - password_hash: '*7AFEAE5774E672996251E09B946CB3953FC67656'
+
+  mysql_grants.present:
+   # based upon https://drupal.org/documentation/install/create-database
+   - mysql.host: localhost
+   - mysql.user: root
+   # NOTE: The ordering of the elements in the grant DOES matter; the salt module will re-query, and the order that the DB returns must match this order
+   - grant: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES
+   - database: d8-core.*
+   - user: drupal
+   - host: localhost
+
+drush:
+  pkg.installed:
+     - names:
+       - drush
+
+# drush_user_public_key:
+#   # This drush config allows us to make a copy of the current editorial instance
+#   file.managed:
+#      - names:
+#        - {{ HOME }}/.ssh/ubuntu-cloud-user.pub
+#      - source: salt://drupal8-core/files/ubuntu-cloud-user.pub
+#      - user: vagrant
+#      - group: vagrant
+#      - mode: 0444
+
+# drush_user_private_key:
+#   file.managed:
+#      - names:
+#        - {{ HOME }}/.ssh/ubuntu-cloud-user
+#      - source: salt://drupal8-core/files/ubuntu-cloud-user
+#      - user: vagrant
+#      - group: vagrant
+#      - mode: 0400
+
+drush_config_dir:
+  file.directory:
+     - names:
+        - {{ HOME }}/.drush
+     - user: vagrant
+     - group: vagrant
+     - mode: 0755
+
+drush_config:
+  file.managed:
+     - names:
+        - {{ HOME }}/.drush/aliases.drushrc.php
+     - source: salt://drupal8-core/files/drushrc.php
+     - user: vagrant
+     - group: vagrant
+     - mode: 0644
+     - require:
+       - file: drush_config_dir
+
+drush_policy_config:
+  file.managed:
+     - names:
+        - {{ HOME }}/.drush/policy.drush.inc
+     - source: salt://drupal8-core/files/policy.drush.inc
+     - user: vagrant
+     - group: vagrant
+     - mode: 0644
+     - require:
+       - file: drush_config
+
+vagrant:
+  user.present:
+    - groups:
+      - vagrant
+    - remove_groups: False
+    - require:
+      - pkg: apache2
+
+#vagrant:
+#  user.present:
+#    - groups:
+#      - vagrant
+#    - remove_groups: False
+#    - require:
+#      - pkg: apache2
+
+# /etc/cozi.conf:
+#   file.managed:
+#     - contents: tag=test.vagrant
+#     - user: vagrant
+#     - group: vagrant
+#     - mode: 0664
+
+# user_mysql_configuration:
+#   file.managed:
+#     - name: {{ HOME }}/.my.cnf
+#     - source: salt://drupal8-core/files/my.cnf
+#     - user: vagrant
+#     - group: vagrant
+#     - mode: 0644
+#     - require:
+#       - file: {{ HOME }}
+#       - pkg: mysql-server

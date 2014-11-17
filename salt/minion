@@ -1,0 +1,14 @@
+# This minion file is empty; we just want to use all of the defaults
+
+file_client: local
+
+file_roots:
+ base:
+   - /srv/salt
+
+state_top: top.sls
+
+startup_states: sls
+
+sls_list:
+  - drupal.config
