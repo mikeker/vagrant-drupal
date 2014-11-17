@@ -38,7 +38,7 @@ apache2:
   pkg:
     - installed
 
-behavenet:
+apache site conf:
   file.managed:
     - name: /etc/apache2/sites-available/behavenet.com.conf
     - source: salt://drupal/files/behavenet.com.conf
@@ -48,12 +48,12 @@ behavenet:
     - require:
       - pkg: apache2
 
-enable behavenet:
+enable example:
   cmd.run:
-    - name: a2ensite behavenet.com
-    - unless: test -L /etc/apache2/sites-enabled/behavenet.com
+    - name: a2ensite example.com
+    - unless: test -L /etc/apache2/sites-enabled/example.com
     - require:
-      - file: behavenet
+      - file: apache site conf
 
 enable rewrite:
   cmd.run:
@@ -66,7 +66,7 @@ start apache2:
   cmd.run:
     - name: service apache2 restart
     - watch:
-      - cmd: enable behavenet
+      - cmd: enable example
       - cmd: enable rewrite
 
 # apache.configfile:
@@ -97,16 +97,16 @@ start apache2:
 #           AllowOverride: All
 
 # PHP 5.3
-php5:
-  pkg:
-  - installed
-  - require:
-    - pkg: apache2
-php-http:
-  pkg:
-  - installed
-  - require:
-    - pkg: php5
+#php5:
+#  pkg:
+#  - installed
+#  - require:
+#    - pkg: apache2
+#php-http:
+#  pkg:
+#  - installed
+#  - require:
+#    - pkg: php5
 # php-http-request:
 #   pkg:
 #   - installed
@@ -114,6 +114,10 @@ php-http:
 #     - pkg: php5
 #     - pkg: libcurl3
 #     - pkg: libpcre3-dev
+
+#
+# Latest PHP
+#
 php5-cli:
   pkg:
   - installed
@@ -237,8 +241,12 @@ drupal_db_user:
     # based upon https://drupal.org/documentation/install/create-database
     - host: localhost
     - user: drupal
-    # NOTE: The ordering of the elements in the grant DOES matter; the salt module will re-query, and the order that the DB returns must match this order
+
+    # NOTE: The ordering of the elements in the grant DOES matter; the salt
+    # module will re-query, and the order that the DB returns must match this
+    # order.
     - grant: SELECT, INSERT, UPDATE, DELETE, CREATE, DROP, INDEX, ALTER, CREATE TEMPORARY TABLES, LOCK TABLES
+
     - database: drupaldb.*
     - require:
       - mysql_database: drupal_db
