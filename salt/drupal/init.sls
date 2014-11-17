@@ -63,12 +63,20 @@ enable rewrite:
     - require:
       - pkg: apache2
 
+disable cgi:
+  cmd.run:
+    - name: a2dismod cgi
+    - unless: test ! -L /etc/apache2/mods-enabled/cgi.load
+    - require:
+      - pkg: apache2
+
 start apache2:
   cmd.run:
     - name: service apache2 restart
     - watch:
       - cmd: enable site
       - cmd: enable rewrite
+      - cmd: disable cgi
 
 # apache.configfile:
 #   - name: /etc/apache2/sites-available/local.core.d8
@@ -112,7 +120,6 @@ start apache2:
 php5_ppa:
   pkgrepo.managed:
     - ppa: ondrej/php5
-#php5-fpm:
 php5:
   pkg.latest:
     - refresh: True
@@ -120,23 +127,11 @@ php5:
       - pkgrepo: php5_ppa
   service.running:
     - enable: True
-#    - watch:
-#      - file: /etc/php5/fpm/pool.d/www.conf
     - require:
       - pkg: php5
-#      - pkg: php5-fpm
-#      - pkg: php5-mcrypt
       - pkg: php5-curl
       - pkg: php5-mysql
       - pkg: php5-cli
-#  file.managed:
-#    - name: /etc/php5/fpm/pool.d/www.conf
-#    - source: salt://packages/php/www.conf
-#    - user: root
-#    - group: root
-#    - mode: '0640'
-#    - require:
-#      - pkg: php5-fpm
 
 # PHP 5.x modules
 php5-cli:
@@ -159,13 +154,6 @@ php5-curl:
   - installed
   - require:
     - pkg: php5
-# Not needed for PHP 5.5
-#php-apc:
-#  pkg:
-#  - installed
-#  - require:
-#    - pkg: php5
-
 
 # Tweak some php.ini settings
 /etc/php5/apache2/php.ini:
@@ -175,6 +163,12 @@ php5-curl:
         memory_limit = 256M
         realpath_cache_size = 16M
         realpath_cache_ttl = 60
+        opcache.revalidate_freq = 0
+        opcache.validate_timestamps = 0
+        opcache.max_accelerated_files = 8000
+        opcache.memory_consumption = 192
+        opcache.interned_strings_buffer = 16
+        opcache.fast_shutdown = 1
 restart apache2:
   cmd.run:
     - name: service apache2 restart
