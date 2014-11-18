@@ -56,28 +56,21 @@ enable site:
     - require:
       - file: apache site conf
 
-enable rewrite:
+enable modules:
   cmd.run:
-    - name: a2enmod rewrite
-    - unless: test -L /etc/apache2/mods-enabled/rewrite.load
-    - require:
-      - pkg: apache2
-
-disable cgi:
-  cmd.run:
-    - name: a2dismod cgi
-    - unless: test ! -L /etc/apache2/mods-enabled/cgi.load
-    - require:
-      - pkg: apache2
+  - name: a2enmod rewrite proxy proxy_fcgi
+  - unless: test -L /etc/apache2/mods-enabled/rewrite.load & test -L /etc/apache2/mods-enabled/proxy.load & test -L /etc/apache2/mods-enabled/proxy_fcgi.load
+  - require:
+    - pkg: apache2
 
 start apache2:
   cmd.run:
     - name: service apache2 restart
     - watch:
       - cmd: enable site
-      - cmd: enable rewrite
-      - cmd: disable cgi
+      - cmd: enable modules
 
+# Couldn't get this working...
 # apache.configfile:
 #   - name: /etc/apache2/sites-available/local.core.d8
 #   - require:
@@ -169,11 +162,65 @@ php5-curl:
         opcache.memory_consumption = 192
         opcache.interned_strings_buffer = 16
         opcache.fast_shutdown = 1
+
+
+#
+# Crazy-talk: try HHVM...
+#
+#First update Boost to 1.49
+#boost_ppa:
+#  pkgrepo.managed:
+#    - humanname: Ubuntu Boost
+#    - name: ppa:mapnik/boost
+#    - dist: precise
+#    - require_in:
+#      - pkg: boost
+#
+#boost:
+#  pkg.installed:
+#    - name: libboost1.49-dev
+#
+#hhvm:
+#  # Add HHVM's GPG key.
+#  cmd:
+#    - run
+#    - name: /usr/bin/curl http://dl.hhvm.com/conf/hhvm.gpg.key | sudo apt-key add -
+#    - unless: /usr/bin/apt-key adv --list-key 1BE7A449
+#    - require:
+#      - cmd: force curl install
+#
+#  # HHVM package repo
+#  pkgrepo.managed:
+#    - humanname: HipHop Virtual Machine
+#    - name: deb http://dl.hhvm.com/ubuntu precise main
+#    - dist: precise
+#    - require_in:
+#      - pkg: hhvm
+#  pkg.installed:
+#    - dist: precise
+#    - name: hhvm
+#
+#  # Tweak some settings
+#  file.append:
+#    - name: /etc/hhvm/php.ini
+#    - require:
+#      - pkg: php5
+#    - text:
+#      - '; PHP_MEMORY_LIMIT is taken from environment'
+#      - 'memory_limit = ${PHP_MEMORY_LIMIT}'
+#
+#  service.running:
+#    - enable: True
+#    - require:
+#      - pkg: hhvm
+
 restart apache2:
   cmd.run:
     - name: service apache2 restart
-    - watch:
-      - file: /etc/php5/apache2/php.ini
+#    - watch:
+#      - file: /etc/php5/apache2/php.ini
+    - require:
+      - pkg: hhvm
 
 # Version control
 git:
