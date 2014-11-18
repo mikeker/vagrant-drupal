@@ -62,7 +62,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   config.vm.synced_folder "../drupal/", "/var/www/source"
 
+  # Make salt files and formula available to the minion.
   config.vm.synced_folder "salt/", "/srv/salt"
+
   config.vm.provision :salt do |salt|
     salt.minion_config = "salt/minion"
     salt.run_highstate = true
